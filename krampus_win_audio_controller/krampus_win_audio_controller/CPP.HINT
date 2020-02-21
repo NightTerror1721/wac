@@ -1,0 +1,2 @@
+#define BEGIN_KPAC_NAMESPACE namespace KPAC_NAMESPACE {
+#define END_KPAC_NAMESPACE }

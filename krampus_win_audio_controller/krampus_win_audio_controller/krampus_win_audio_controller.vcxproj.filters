@@ -12,5 +12,34 @@
     <ClCompile Include="src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\audiovolume.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\audiosession.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core_events.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core_pipeline.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\kpaudiocontr.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core_events.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core_pipeline.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
