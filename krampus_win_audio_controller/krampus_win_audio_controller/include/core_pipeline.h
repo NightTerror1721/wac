@@ -13,130 +13,139 @@ HRESULT initialize();
 void uninitialize();
 
 
-
-class ResourceController
+namespace core
 {
-protected:
-	HRESULT _status;
 
-public:
-	ResourceController();
-	virtual ~ResourceController();
+	class ResourceController
+	{
+	protected:
+		HRESULT _status;
 
-	HRESULT status() const;
-	bool hasErrors() const;
+	public:
+		ResourceController();
+		ResourceController(HRESULT status);
+		ResourceController(const ResourceController&) = default;
+		ResourceController(ResourceController&&) noexcept = default;
+		virtual ~ResourceController();
 
-private:
-	ResourceController(const ResourceController&);
-	
-	ResourceController& operator= (const ResourceController&);
-};
+		ResourceController& operator= (const ResourceController&) = default;
+		ResourceController& operator= (ResourceController&&) noexcept = default;
 
-
-
-class SessionControl : public ResourceController
-{
-private:
-	Resource<IAudioSessionControl> _baseControl;
-	Resource<IAudioSessionControl2> _control;
-
-public:
-	SessionControl(ResourceReference<IAudioSessionManager2> manager);
-	SessionControl(Resource<IAudioSessionControl>&& nativeControl);
-	~SessionControl();
-
-	DWORD getProcessId();
-
-	bool isSystemSoundSession();
-
-	std::wstring getRawSessionIdentifier();
-};
-
-
-class AudioVolume : public ResourceController
-{
-private:
-	Resource<ISimpleAudioVolume> _volume;
-
-public:
-	AudioVolume(ResourceReference<IAudioSessionManager2> manager);
-	AudioVolume(Resource<ISimpleAudioVolume>&& nativeVolume);
-	~AudioVolume();
-
-	bool isMute();
-	void setMute(bool flag);
-
-	float getVolume();
-	void setVolume(float volume);
-};
-
-
-class SessionCollection : public ResourceController
-{
-private:
-	Resource<IAudioSessionEnumerator> _col;
-
-public:
-	SessionCollection(ResourceReference<IAudioSessionManager2> manager);
-	~SessionCollection();
-
-	int getSessionCount();
-
-	SessionControl getSession(int index);
-
-	AudioVolume getVolume(int index);
-};
+		HRESULT status() const;
+		bool hasErrors() const;
+	};
 
 
 
-class SessionManager : public ResourceController
-{
-private:
-	Resource<IAudioSessionManager2> _session;
+	class SessionControl : public ResourceController
+	{
+	private:
+		COM_Object<IAudioSessionControl> _baseControl;
+		COM_Object<IAudioSessionControl2> _control;
 
-public:
-	SessionManager(ResourceReference<IMMDevice> device);
-	~SessionManager();
+	public:
+		inline SessionControl() : ResourceController{ E_POINTER }, _baseControl { nullptr }, _control{ nullptr } {}
+		SessionControl(COM_Object<IAudioSessionManager2> manager);
+		SessionControl(COM_Object<IAudioSessionControl>&& nativeControl);
+		~SessionControl();
 
-	SessionControl getMasterSession();
+		DWORD getProcessId();
 
-	AudioVolume getMasterVolume();
+		bool isSystemSoundSession();
 
-	SessionCollection getSessionCollection();
-};
-
-
-
-class Device : public ResourceController
-{
-private:
-	Resource<IMMDevice> _device;
-
-public:
-	Device(IMMDevice* nativeDevice);
-	~Device();
-
-	SessionManager getManager();
-};
+		std::wstring getRawSessionIdentifier();
+	};
 
 
+	class AudioVolume : public ResourceController
+	{
+	private:
+		COM_Object<ISimpleAudioVolume> _volume;
 
-class DeviceManager : public ResourceController
-{
-private:
-	Resource<IMMDeviceEnumerator> _enum;
-	Resource<IMMDeviceCollection> _col;
+	public:
+		inline AudioVolume() : ResourceController{ E_POINTER }, _volume{ nullptr } {}
+		AudioVolume(COM_Object<IAudioSessionManager2> manager);
+		AudioVolume(COM_Object<ISimpleAudioVolume>&& nativeVolume);
+		~AudioVolume();
 
-public:
-	DeviceManager();
-	~DeviceManager();
+		bool isMute();
+		void setMute(bool flag);
 
-	unsigned int getDeviceCount();
-
-	Device getDefaultDevice();
-};
+		float getVolume();
+		void setVolume(float volume);
+	};
 
 
+	class SessionCollection : public ResourceController
+	{
+	private:
+		COM_Object<IAudioSessionEnumerator> _col;
+
+	public:
+		inline SessionCollection() : ResourceController{ E_POINTER }, _col{ nullptr } {}
+		SessionCollection(COM_Object<IAudioSessionManager2> manager);
+		~SessionCollection();
+
+		int getSessionCount();
+
+		SessionControl getSession(int index);
+
+		AudioVolume getVolume(int index);
+	};
+
+
+
+	class SessionManager : public ResourceController
+	{
+	private:
+		COM_Object<IAudioSessionManager2> _session;
+
+	public:
+		inline SessionManager() : ResourceController{ E_POINTER }, _session{ nullptr } {}
+		SessionManager(COM_Object<IMMDevice> device);
+		~SessionManager();
+
+		SessionControl getMasterSession();
+
+		AudioVolume getMasterVolume();
+
+		SessionCollection getSessionCollection();
+	};
+
+
+
+	class Device : public ResourceController
+	{
+	private:
+		COM_Object<IMMDevice> _device;
+
+	public:
+		inline Device() : ResourceController{ E_POINTER }, _device{ nullptr } {}
+		Device(IMMDevice* nativeDevice);
+		~Device();
+
+		SessionManager getManager();
+	};
+
+
+
+	class DeviceManager : public ResourceController
+	{
+	private:
+		COM_Object<IMMDeviceEnumerator> _enum;
+		COM_Object<IMMDeviceCollection> _col;
+
+	public:
+		DeviceManager();
+		~DeviceManager();
+
+		unsigned int getDeviceCount();
+		Device getDevice(unsigned int index);
+
+		Device getDefaultDevice();
+	};
+
+}
 
 END_KPAC_NAMESPACE
 

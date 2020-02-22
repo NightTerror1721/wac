@@ -146,17 +146,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\audiosession.cpp" />
-    <ClCompile Include="src\audiovolume.cpp" />
+    <ClCompile Include="src\audio_controller.cpp" />
     <ClCompile Include="src\core_events.cpp" />
     <ClCompile Include="src\core_pipeline.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\audio_controller.h" />
     <ClInclude Include="include\core_events.h" />
     <ClInclude Include="include\core_pipeline.h" />
-    <ClInclude Include="include\kpaudiocontr.h" />
     <ClInclude Include="include\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

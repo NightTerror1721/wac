@@ -1,6 +1,11 @@
 #pragma once
 
+#include <windows.h>
+
+#include <cmath>
 #include <string>
+#include <iostream>
+#include <type_traits>
 
 #define KPAC kpac::
 #define KPAC_NAMESPACE kpac
@@ -14,39 +19,18 @@ BEGIN_KPAC_NAMESPACE
 
 
 template<typename _Ty>
-class Resource;
-
-template<typename _Ty>
-class ResourceReference;
+class COM_Object;
 
 END_KPAC_NAMESPACE
 
 
 template<typename _Ty>
-bool operator== (const KPAC Resource<_Ty>& r0, const KPAC Resource<_Ty>& r1);
+bool operator== (const KPAC COM_Object<_Ty>& r0, const KPAC COM_Object<_Ty>& r1);
 template<typename _Ty>
-bool operator!= (const KPAC Resource<_Ty>& r0, const KPAC Resource<_Ty>& r1);
+bool operator!= (const KPAC COM_Object<_Ty>& r0, const KPAC COM_Object<_Ty>& r1);
 
 template<typename _Ty>
-bool operator== (const KPAC ResourceReference<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1);
-template<typename _Ty>
-bool operator!= (const KPAC ResourceReference<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1);
-
-template<typename _Ty>
-bool operator== (const KPAC Resource<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1);
-template<typename _Ty>
-bool operator!= (const KPAC Resource<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1);
-
-template<typename _Ty>
-bool operator== (const KPAC ResourceReference<_Ty>& r0, const KPAC Resource<_Ty>& r1);
-template<typename _Ty>
-bool operator!= (const KPAC ResourceReference<_Ty>& r0, const KPAC Resource<_Ty>& r1);
-
-template<typename _Ty>
-bool operator! (const KPAC Resource<_Ty>& r);
-
-template<typename _Ty>
-bool operator! (const KPAC ResourceReference<_Ty>& r);
+bool operator! (const KPAC COM_Object<_Ty>& r);
 
 
 
@@ -54,141 +38,148 @@ BEGIN_KPAC_NAMESPACE
 
 
 template<typename _Ty>
-class ResourceReference
+class COM_Object
 {
+	static_assert(std::is_base_of<IUnknown, _Ty>::value);
+
 private:
-	_Ty* _res;
+	_Ty* _obj;
 
 public:
-	ResourceReference(_Ty* resource) :
-		_res{ resource }
-	{}
-	ResourceReference(const ResourceReference&) = default;
-	ResourceReference(ResourceReference&&) = default;
-
-	ResourceReference& operator= (const ResourceReference&) = default;
-	ResourceReference& operator= (ResourceReference&&) = default;
-
-	operator bool() const { return _res; }
-
-	_Ty* operator-> () { return _res; }
-	const _Ty* operator-> () const { return _res; }
-
-	_Ty* operator* () { return _res; }
-	const _Ty* operator* () const { return _res; }
-
-	template<typename _Ty>
-	friend bool ::operator== (const KPAC ResourceReference<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1);
-	template<typename _Ty>
-	friend bool ::operator!= (const KPAC ResourceReference<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1);
-
-	template<typename _Ty>
-	friend bool ::operator== (const KPAC Resource<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1);
-	template<typename _Ty>
-	friend bool ::operator!= (const KPAC Resource<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1);
-
-	template<typename _Ty>
-	friend bool ::operator== (const KPAC ResourceReference<_Ty>& r0, const KPAC Resource<_Ty>& r1);
-	template<typename _Ty>
-	friend bool ::operator!= (const KPAC ResourceReference<_Ty>& r0, const KPAC Resource<_Ty>& r1);
-
-	template<typename _Ty>
-	friend bool ::operator! (const KPAC ResourceReference<_Ty>& r);
-};
-
-template<typename _Ty>
-class Resource
-{
-private:
-	_Ty* _res;
-
-public:
-	Resource(_Ty* resource) :
-		_res{ resource }
+	COM_Object(_Ty* resource) :
+		_obj{ resource }
 	{}
 
-	Resource(const Resource&) = delete;
-	Resource(Resource&& r) noexcept :
-		_res{ std::move(r._res) }
+	COM_Object(const COM_Object& obj) :
+		_obj{ obj._obj }
 	{
-		r._res = nullptr;
+		if (_obj)
+			_obj->AddRef();
+	}
+	COM_Object(COM_Object&& obj) noexcept :
+		_obj{ std::move(obj._obj) }
+	{
+		obj._obj = nullptr;
 	}
 
-	~Resource()
+	~COM_Object()
 	{
-		if(_res)
-			_res->Release();
+		if(_obj)
+			_obj->Release();
 	}
 
-	Resource& operator= (const Resource&) = delete;
-	Resource& operator= (Resource&& r)
+	COM_Object& operator= (const COM_Object& obj)
 	{
-		_res = std::move(r._res);
-		r._res = nullptr;
+		if (_obj && _obj != obj._obj)
+			_obj->Release();
+		_obj = obj._obj;
+		_obj->AddRef();
+		return *this;
+	}
+	COM_Object& operator= (COM_Object&& obj) noexcept
+	{
+		_obj = std::move(obj._obj);
+		obj._obj = nullptr;
 		return *this;
 	}
 
-	operator bool() const { return _res; }
+	operator bool() const { return _obj; }
 
-	_Ty* operator-> () { return _res; }
-	const _Ty* operator-> () const { return _res; }
+	_Ty* operator-> () { return _obj; }
+	const _Ty* operator-> () const { return _obj; }
 
-	_Ty* operator* () { return _res; }
-	const _Ty* operator* () const { return _res; }
-
-	ResourceReference<_Ty> operator& () { return { _res }; }
-	const ResourceReference<_Ty> operator& () const { return { _res }; }
+	_Ty* operator* () { return _obj; }
+	const _Ty* operator* () const { return _obj; }
 
 
 	template<typename _Ty>
-	friend bool ::operator== (const KPAC Resource<_Ty>& r0, const KPAC Resource<_Ty>& r1);
+	friend bool ::operator== (const KPAC COM_Object<_Ty>& r0, const KPAC COM_Object<_Ty>& r1);
 	template<typename _Ty>
-	friend bool ::operator!= (const KPAC Resource<_Ty>& r0, const KPAC Resource<_Ty>& r1);
+	friend bool ::operator!= (const KPAC COM_Object<_Ty>& r0, const KPAC COM_Object<_Ty>& r1);
 
 	template<typename _Ty>
-	friend bool ::operator== (const KPAC Resource<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1);
-	template<typename _Ty>
-	friend bool ::operator!= (const KPAC Resource<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1);
-
-	template<typename _Ty>
-	friend bool ::operator== (const KPAC ResourceReference<_Ty>& r0, const KPAC Resource<_Ty>& r1);
-	template<typename _Ty>
-	friend bool ::operator!= (const KPAC ResourceReference<_Ty>& r0, const KPAC Resource<_Ty>& r1);
-
-	template<typename _Ty>
-	friend bool ::operator! (const KPAC Resource<_Ty>& r);
+	friend bool ::operator! (const KPAC COM_Object<_Ty>& r);
 };
 
 
 
 std::wstring to_wstring(const wchar_t* wstr);
 
+std::wstring get_process_name(DWORD pid);
+
 END_KPAC_NAMESPACE
 
 
 template<typename _Ty>
-bool operator== (const KPAC Resource<_Ty>& r0, const KPAC Resource<_Ty>& r1) { return r0._res == r1._res; }
+bool operator== (const KPAC COM_Object<_Ty>& obj0, const KPAC COM_Object<_Ty>& obj1) { return obj0._obj == obj1._obj; }
 template<typename _Ty>
-bool operator!= (const KPAC Resource<_Ty>& r0, const KPAC Resource<_Ty>& r1) { return r0._res != r1._res; }
-
-template<typename _Ty>
-bool operator== (const KPAC ResourceReference<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1) { return r0._res == r1._res; }
-template<typename _Ty>
-bool operator!= (const KPAC ResourceReference<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1) { return r0._res != r1._res; }
-
-template<typename _Ty>
-bool operator== (const KPAC Resource<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1) { return r0._res == r1._res; }
-template<typename _Ty>
-bool operator!= (const KPAC Resource<_Ty>& r0, const KPAC ResourceReference<_Ty>& r1) { return r0._res != r1._res; }
-
-template<typename _Ty>
-bool operator== (const KPAC ResourceReference<_Ty>& r0, const KPAC Resource<_Ty>& r1) { return r0._res == r1._res; }
-template<typename _Ty>
-bool operator!= (const KPAC ResourceReference<_Ty>& r0, const KPAC Resource<_Ty>& r1) { return r0._res != r1._res; }
+bool operator!= (const KPAC COM_Object<_Ty>& obj0, const KPAC COM_Object<_Ty>& obj1) { return obj0._obj != obj1._obj; }
 
 
 template<typename _Ty>
-bool operator! (const KPAC Resource<_Ty>& r) { return !r._res; }
+bool operator! (const KPAC COM_Object<_Ty>& obj) { return !obj._obj; }
+
+
+class Percentage;
 
 template<typename _Ty>
-bool operator! (const KPAC ResourceReference<_Ty>& r) { return !r._res; }
+_Ty operator% (const Percentage& p, const _Ty& value);
+
+template<typename _Ty>
+_Ty operator% (const _Ty& value, const Percentage& p);
+
+template<typename _Ty>
+_Ty& operator%= (_Ty& value, const Percentage& p);
+
+bool operator! (const Percentage& p);
+
+std::ostream& operator<< (std::ostream& os, const Percentage& p);
+std::wostream& operator<< (std::wostream& os, const Percentage& p);
+
+class Percentage
+{
+private:
+	float _per;
+
+public:
+	inline Percentage(const float percentage, const float min = 0.f, const float max = 1.f) :
+		_per{ (std::fminf(max, std::fmaxf(min, percentage)) - min) / (max - min) }
+	{}
+	Percentage(const Percentage&) = default;
+
+	Percentage& operator= (const Percentage&) = default;
+
+	inline operator bool() const { return _per; }
+	inline operator float() const { return _per; }
+
+	template<typename _Ty>
+	static Percentage of(const _Ty& value, const float min = 0.f, const float max = 1.f)
+	{
+		return { static_cast<float>(value), min, max };
+	}
+
+	template<typename _Ty>
+	friend _Ty operator% (const Percentage& p, const _Ty& value);
+
+	template<typename _Ty>
+	friend _Ty operator% (const _Ty& value, const Percentage& p);
+
+	template<typename _Ty>
+	friend _Ty& operator%= (_Ty& value, const Percentage& p);
+
+	friend bool ::operator! (const Percentage& p);
+
+	friend std::ostream& ::operator<< (std::ostream& os, const Percentage& p);
+	friend std::wostream& ::operator<< (std::wostream& os, const Percentage& p);
+};
+
+template<typename _Ty>
+_Ty operator% (const Percentage& p, const _Ty& value) { return p._per * value; }
+
+template<typename _Ty>
+_Ty operator% (const _Ty& value, const Percentage& p) { return value * p._per; }
+
+template<typename _Ty>
+_Ty& operator%= (_Ty& value, const Percentage& p) { return (value = value * p._per, value); }
+
+
