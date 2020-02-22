@@ -9,8 +9,8 @@
 BEGIN_KPAC_NAMESPACE
 
 
-HRESULT initialize();
-void uninitialize();
+HRESULT COM_Initialize();
+void COM_Uninitialize();
 
 
 namespace core
@@ -33,6 +33,8 @@ namespace core
 
 		HRESULT status() const;
 		bool hasErrors() const;
+
+		operator bool() const;
 	};
 
 
@@ -149,3 +151,5 @@ namespace core
 
 END_KPAC_NAMESPACE
 
+
+bool operator! (const KPAC core::ResourceController& rc);

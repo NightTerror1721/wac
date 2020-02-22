@@ -4,12 +4,12 @@
 
 BEGIN_KPAC_NAMESPACE
 
-HRESULT initialize()
+HRESULT COM_Initialize()
 {
     return CoInitializeEx(NULL, COINIT::COINIT_MULTITHREADED);
 }
 
-void uninitialize()
+void COM_Uninitialize()
 {
     CoUninitialize();
 }
@@ -106,6 +106,8 @@ namespace core
     HRESULT ResourceController::status() const { return _status; }
     bool ResourceController::hasErrors() const { return FAILED(_status); }
 
+    ResourceController::operator bool() const { return !FAILED(_status); }
+
 
 
 
@@ -117,6 +119,8 @@ namespace core
 
     SessionManager Device::getManager()
     {
+        if (!_device)
+            return {};
         return { _device };
     }
 
@@ -132,6 +136,8 @@ namespace core
 
     unsigned int DeviceManager::getDeviceCount()
     {
+        if (!_col)
+            return 0;
         UINT count;
         _col->GetCount(&count);
         return count;
@@ -139,18 +145,22 @@ namespace core
 
     Device DeviceManager::getDevice(unsigned int index)
     {
+        if (!_col)
+            return {};
         UINT idx = index;
         IMMDevice* device;
         if(FAILED(_col->Item(idx, &device)))
-            return { nullptr };
+            return {};
         return { device };
     }
 
     Device DeviceManager::getDefaultDevice()
     {
+        if (!_enum)
+            return {};
         IMMDevice* device;
         if (FAILED(_enum->GetDefaultAudioEndpoint(EDataFlow::eRender, ERole::eConsole, &device)))
-            return { nullptr };
+            return {};
         return { device };
     }
 
@@ -171,6 +181,8 @@ namespace core
 
     DWORD SessionControl::getProcessId()
     {
+        if (!_control)
+            return 0;
         DWORD pid = 0;
         _control->GetProcessId(&pid);
         return pid;
@@ -178,11 +190,14 @@ namespace core
 
     bool SessionControl::isSystemSoundSession()
     {
-        return _control->IsSystemSoundsSession() == S_OK;
+        return _control && _control->IsSystemSoundsSession() == S_OK;
     }
 
     std::wstring SessionControl::getRawSessionIdentifier()
     {
+        if (!_control)
+            return L"";
+
         LPWSTR w_str;
         if (_control->GetSessionIdentifier(&w_str) != S_OK)
         {
@@ -210,24 +225,30 @@ namespace core
 
     bool AudioVolume::isMute()
     {
+        if (!_volume)
+            return true;
         BOOL flag;
         _volume->GetMute(&flag);
         return flag;
     }
     void AudioVolume::setMute(bool flag)
     {
-        _volume->SetMute(flag, NULL);
+        if(_volume)
+            _volume->SetMute(flag, NULL);
     }
 
     float AudioVolume::getVolume()
     {
+        if (!_volume)
+            return -1.f;
         float vol;
         _volume->GetMasterVolume(&vol);
         return vol;
     }
     void AudioVolume::setVolume(float volume)
     {
-        _volume->SetMasterVolume(volume, NULL);
+        if(_volume)
+            _volume->SetMasterVolume(volume, NULL);
     }
 
 
@@ -248,16 +269,22 @@ namespace core
 
     SessionControl SessionManager::getMasterSession()
     {
+        if (!_session)
+            return {};
         return { _session };
     }
 
     AudioVolume SessionManager::getMasterVolume()
     {
+        if (!_session)
+            return {};
         return { _session };
     }
 
     SessionCollection SessionManager::getSessionCollection()
     {
+        if (!_session)
+            return {};
         return { _session };
     }
 
@@ -273,6 +300,8 @@ namespace core
 
     int SessionCollection::getSessionCount()
     {
+        if (!_col)
+            return 0;
         int count;
         _col->GetCount(&count);
         return count;
@@ -280,22 +309,28 @@ namespace core
 
     SessionControl SessionCollection::getSession(int index)
     {
+        if (!_col)
+            return {};
+
         IAudioSessionControl* control;
         if (FAILED(_col->GetSession(index, &control)))
-            return { COM_Object<IAudioSessionManager2>{ nullptr } };
+            return {};
 
         return { std::move(COM_Object<IAudioSessionControl>{ control }) };
     }
 
     AudioVolume SessionCollection::getVolume(int index)
     {
+        if (!_col)
+            return {};
+
         ISimpleAudioVolume* volume;
         IAudioSessionControl* control;
         if (FAILED(_col->GetSession(index, &control)))
-            return { COM_Object<IAudioSessionManager2>{ nullptr } };
+            return {};
 
         if (FAILED(control->QueryInterface(__uuidof(ISimpleAudioVolume), (void**)&volume)))
-            return { COM_Object<IAudioSessionManager2>{ nullptr } };
+            return {};
 
         return { std::move(COM_Object<ISimpleAudioVolume>{ volume }) };
     }

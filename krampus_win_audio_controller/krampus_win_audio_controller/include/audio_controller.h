@@ -22,6 +22,12 @@ public:
 	inline DWORD getProcessId() const { return _pid; }
 	inline const std::wstring& getPath() const { return _path; }
 	inline const std::wstring& getName() const { return _name; }
+
+	inline bool isInvalid() const { return !_pid; }
+
+	inline operator bool() const { return _pid; }
+
+	static inline AudioSessionInfo invalid() { return { 0 }; }
 };
 
 
@@ -36,6 +42,9 @@ public:
 	AudioEndpointController(const AudioEndpointController& c);
 	AudioEndpointController(AudioEndpointController&& c) noexcept;
 	~AudioEndpointController();
+
+	bool isInvalid() const;
+	operator bool() const;
 
 	float getMasterVolume();
 	void setMasterVolume(const float volume);
@@ -67,5 +76,8 @@ private:
 
 END_KPAC_NAMESPACE
 
+
+bool operator! (const KPAC AudioSessionInfo& s);
+bool operator! (const KPAC AudioEndpointController& c);
 
 std::wostream& operator<< (std::wostream& os, const KPAC AudioSessionInfo& info);

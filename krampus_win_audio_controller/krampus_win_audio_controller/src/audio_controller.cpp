@@ -18,10 +18,13 @@ static std::wstring _extract_name(const std::wstring& spath)
 
 AudioSessionInfo::AudioSessionInfo(DWORD pid) :
 	_pid{ pid },
-	_path{ get_process_name(pid) },
-	_name{ _extract_name(_path) }
+	_path{ !pid ? L"" : get_process_name(pid) },
+	_name{ !pid ? L"" : _extract_name(_path) }
 {}
 AudioSessionInfo::~AudioSessionInfo() {}
+
+
+bool operator! (const KPAC core::ResourceController& rc) { return rc.hasErrors(); }
 
 
 
@@ -46,16 +49,48 @@ AudioEndpointController::~AudioEndpointController()
 {
 }
 
-float AudioEndpointController::getMasterVolume() { return _masterSession.getMasterVolume().getVolume(); }
-void AudioEndpointController::setMasterVolume(const float volume) { _masterSession.getMasterVolume().setVolume(volume); }
-void AudioEndpointController::setMasterVolume(const Percentage& volume) { _masterSession.getMasterVolume().setVolume(volume); }
+bool AudioEndpointController::isInvalid() const { return !_masterSession; }
+AudioEndpointController::operator bool() const { return _masterSession; }
 
-bool AudioEndpointController::isMasterMute() { return _masterSession.getMasterVolume().isMute(); }
-void AudioEndpointController::setMasterMute(bool flag) { _masterSession.getMasterVolume().setMute(flag); }
+float AudioEndpointController::getMasterVolume()
+{
+	if (!_masterSession)
+		return -1;
+	return _masterSession.getMasterVolume().getVolume();
+}
+void AudioEndpointController::setMasterVolume(const float volume)
+{
+	if(_masterSession)
+		_masterSession.getMasterVolume().setVolume(volume);
+}
+void AudioEndpointController::setMasterVolume(const Percentage& volume)
+{
+	if (_masterSession)
+		_masterSession.getMasterVolume().setVolume(volume);
+}
 
-size_t AudioEndpointController::getSessionCount() { return static_cast<size_t>(_masterSession.getSessionCollection().getSessionCount()); }
+bool AudioEndpointController::isMasterMute()
+{
+	if (!_masterSession)
+		return true;
+	return _masterSession.getMasterVolume().isMute();
+}
+void AudioEndpointController::setMasterMute(bool flag)
+{
+	if (_masterSession)
+		_masterSession.getMasterVolume().setMute(flag);
+}
+
+size_t AudioEndpointController::getSessionCount()
+{
+	if (!_masterSession)
+		return 0;
+	return static_cast<size_t>(_masterSession.getSessionCollection().getSessionCount());
+}
 std::vector<AudioSessionInfo> AudioEndpointController::getAllSessionsInfo()
 {
+	if (!_masterSession)
+		return {};
 	core::SessionCollection col = _masterSession.getSessionCollection();
 	int len = col.getSessionCount();
 	std::vector<AudioSessionInfo> v{ static_cast<size_t>(len) };
@@ -66,40 +101,42 @@ std::vector<AudioSessionInfo> AudioEndpointController::getAllSessionsInfo()
 }
 AudioSessionInfo AudioEndpointController::getSessionInfo(const size_t index)
 {
+	if (!_masterSession)
+		return AudioSessionInfo::invalid();
 	return { _masterSession.getSessionCollection().getSession(index).getProcessId() };
 }
 
 float AudioEndpointController::getSessionVolume(const AudioSessionInfo& session)
 {
 	core::AudioVolume vol = _getSessionVolumeController(session);
-	if (vol.hasErrors())
+	if (!vol)
 		return -1;
 	return vol.getVolume();
 }
 void AudioEndpointController::setSessionVolume(const AudioSessionInfo& session, const float volume)
 {
 	core::AudioVolume vol = _getSessionVolumeController(session);
-	if (!vol.hasErrors())
+	if (!vol)
 		vol.setVolume(volume);
 }
 void AudioEndpointController::setSessionVolume(const AudioSessionInfo& session, const Percentage& volume)
 {
 	core::AudioVolume vol = _getSessionVolumeController(session);
-	if (!vol.hasErrors())
+	if (vol)
 		vol.setVolume(volume);
 }
 
 bool AudioEndpointController::isSessionMute(const AudioSessionInfo& session)
 {
 	core::AudioVolume vol = _getSessionVolumeController(session);
-	if (vol.hasErrors())
+	if (!vol)
 		return true;
 	return vol.isMute();
 }
 void AudioEndpointController::setSessionMute(const AudioSessionInfo& session, bool flag)
 {
 	core::AudioVolume vol = _getSessionVolumeController(session);
-	if (!vol.hasErrors())
+	if (vol)
 		vol.setMute(flag);
 }
 
@@ -107,11 +144,15 @@ void AudioEndpointController::setSessionMute(const AudioSessionInfo& session, bo
 AudioEndpointController AudioEndpointController::defaultEndpoint()
 {
 	core::DeviceManager man;
+	if (!man)
+		return {};
 	return { &man.getDefaultDevice() };
 }
 std::vector<AudioEndpointController> AudioEndpointController::endpoints()
 {
 	core::DeviceManager man;
+	if (!man)
+		return {};
 	unsigned int len = man.getDeviceCount();
 	std::vector<AudioEndpointController> v{ len };
 	for (unsigned int i = 0; i < len; ++i)
@@ -121,12 +162,14 @@ std::vector<AudioEndpointController> AudioEndpointController::endpoints()
 
 core::AudioVolume AudioEndpointController::_getSessionVolumeController(const AudioSessionInfo& session)
 {
+	if (!_masterSession)
+		return {};
 	core::SessionCollection col = _masterSession.getSessionCollection();
 	int len = col.getSessionCount();
 	for (int i = 0; i < len; ++i)
 		if (col.getSession(i).getProcessId() == session.getProcessId())
 			return col.getVolume(i);
-	return { COM_Object<IAudioSessionManager2>{ nullptr } };
+	return {};
 }
 
 
@@ -135,6 +178,9 @@ core::AudioVolume AudioEndpointController::_getSessionVolumeController(const Aud
 
 
 END_KPAC_NAMESPACE
+
+bool operator! (const KPAC AudioSessionInfo& s) { return !s.operator bool(); }
+bool operator! (const KPAC AudioEndpointController& c) { return c.isInvalid(); }
 
 std::wostream& operator<< (std::wostream& os, const KPAC AudioSessionInfo& info)
 {
