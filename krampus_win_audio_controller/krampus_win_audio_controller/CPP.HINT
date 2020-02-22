@@ -1,2 +1,4 @@
 #define BEGIN_KPAC_NAMESPACE namespace KPAC_NAMESPACE {
 #define END_KPAC_NAMESPACE }
+#define declcmd
+#define CMD_Action(_T, _C, _A) [](TerminalApplication* _T, AudioEndpointController* _C, const std::vector<std::string>& _A) -> void

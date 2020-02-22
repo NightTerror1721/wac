@@ -56,6 +56,7 @@ public:
 	size_t getSessionCount();
 	std::vector<AudioSessionInfo> getAllSessionsInfo();
 	AudioSessionInfo getSessionInfo(const size_t index);
+	AudioSessionInfo getSessionInfoByPid(DWORD pid);
 
 	float getSessionVolume(const AudioSessionInfo& session);
 	void setSessionVolume(const AudioSessionInfo& session, const float volume);

@@ -105,6 +105,20 @@ AudioSessionInfo AudioEndpointController::getSessionInfo(const size_t index)
 		return AudioSessionInfo::invalid();
 	return { _masterSession.getSessionCollection().getSession(index).getProcessId() };
 }
+AudioSessionInfo AudioEndpointController::getSessionInfoByPid(DWORD pid)
+{
+	if (!_masterSession)
+		return AudioSessionInfo::invalid();
+	core::SessionCollection col = _masterSession.getSessionCollection();
+	int len = col.getSessionCount();
+	for (int i = 0; i < len; ++i)
+	{
+		DWORD s_pid = col.getSession(i).getProcessId();
+		if (s_pid == pid)
+			return { s_pid };
+	}
+	return AudioSessionInfo::invalid();
+}
 
 float AudioEndpointController::getSessionVolume(const AudioSessionInfo& session)
 {

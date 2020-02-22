@@ -24,6 +24,9 @@
     <ClCompile Include="src\audio_controller.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\terminal_app.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core_events.h">
@@ -36,6 +39,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\audio_controller.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\terminal_app.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
